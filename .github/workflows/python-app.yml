@@ -47,16 +47,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      - name: Get Chrome version
-        id: chrome_version
-        run: |
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-          echo "CHROME_VERSION=$CHROME_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Setup ChromeDriver
-        uses: nanasess/setup-chromedriver@v1
-        with:
-          chromedriver-version: ${{ steps.chrome_version.outputs.CHROME_VERSION }}
+      - name: Setup ChromeDriver (auto version)
+        uses: webdrivers/action-chromedriver@v1
 
       - name: Run tests based on mode
         run: |
