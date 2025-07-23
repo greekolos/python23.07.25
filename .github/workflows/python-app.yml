@@ -13,81 +13,90 @@ on:
       test_marker:
         description: 'Test marker (for mode=marker)'
         required: false
+  push:
+    branches:
+      - main
 
 jobs:
   run-tests:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Debug PATH and Python
-      run: |
-        echo $PATH
-        which python
-        which python3
-        python --version || echo "python not found"
-        python3 --version || echo "python3 not found"
+      - name: Debug PATH and Python
+        run: |
+          echo $PATH
+          which python
+          which python3
+          python --version || echo "python not found"
+          python3 --version || echo "python3 not found"
 
-    - name: Install dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
 
-    - name: Install Google Chrome
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+      - name: Install Google Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
-    - name: Setup ChromeDriver
-      uses: nanasess/setup-chromedriver@v1
-      with:
-        chrome-version: 'latest'
+      - name: Get Chrome version
+        id: chrome_version
+        run: |
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+          echo "CHROME_VERSION=$CHROME_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Run tests based on mode
-      run: |
-        MODE="${{ github.event.inputs.mode }}"
-        PATH="${{ github.event.inputs.test_path }}"
-        MARKER="${{ github.event.inputs.test_marker }}"
+      - name: Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v1
+        with:
+          chromedriver-version: ${{ steps.chrome_version.outputs.CHROME_VERSION }}
 
-        echo "Mode: $MODE"
-        echo "Test path: $PATH"
-        echo "Marker: $MARKER"
+      - name: Run tests based on mode
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          PATH="${{ github.event.inputs.test_path }}"
+          MARKER="${{ github.event.inputs.test_marker }}"
 
-        if [[ "$MODE" == "all" ]]; then
-          python3 -m pytest
+          echo "Mode: $MODE"
+          echo "Test path: $PATH"
+          echo "Marker: $MARKER"
 
-        elif [[ "$MODE" == "changed" ]]; then
-          CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
-          echo "Changed test files: $CHANGED_TESTS"
-          if [ -n "$CHANGED_TESTS" ]; then
-            python3 -m pytest $CHANGED_TESTS
+          if [[ "$MODE" == "all" ]]; then
+            python3 -m pytest
+
+          elif [[ "$MODE" == "changed" ]]; then
+            CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
+            echo "Changed test files: $CHANGED_TESTS"
+            if [ -n "$CHANGED_TESTS" ]; then
+              python3 -m pytest $CHANGED_TESTS
+            else
+              echo "No changed tests found."
+            fi
+
+          elif [[ "$MODE" == "path" ]]; then
+            if [ -n "$PATH" ]; then
+              python3 -m pytest "$PATH"
+            else
+              echo "Error: test_path is empty"
+              exit 1
+            fi
+
+          elif [[ "$MODE" == "marker" ]]; then
+            if [ -n "$MARKER" ]; then
+              python3 -m pytest -m "$MARKER"
+            else
+              echo "Error: test_marker is empty"
+              exit 1
+            fi
+
           else
-            echo "No changed tests found."
-          fi
-
-        elif [[ "$MODE" == "path" ]]; then
-          if [ -n "$PATH" ]; then
-            python3 -m pytest "$PATH"
-          else
-            echo "Error: test_path is empty"
+            echo "Invalid mode: $MODE"
             exit 1
           fi
-
-        elif [[ "$MODE" == "marker" ]]; then
-          if [ -n "$MARKER" ]; then
-            python3 -m pytest -m "$MARKER"
-          else
-            echo "Error: test_marker is empty"
-            exit 1
-          fi
-
-        else
-          echo "Invalid mode: $MODE"
-          exit 1
-        fi
