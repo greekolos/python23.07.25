@@ -1,14 +1,21 @@
 name: Python CI
 
 on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode (all | changed | path | marker)'
+        required: true
+        default: 'all'
+      test_path:
+        description: 'Path to test or test function (for mode=path)'
+        required: false
+      test_marker:
+        description: 'Test marker (for mode=marker)'
+        required: false
 
 jobs:
-  build:
-
+  run-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +31,45 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run tests
+    - name: Run tests based on mode
       run: |
-        pytest
+        MODE="${{ github.event.inputs.mode }}"
+        PATH="${{ github.event.inputs.test_path }}"
+        MARKER="${{ github.event.inputs.test_marker }}"
+
+        echo "Mode: $MODE"
+        echo "Test path: $PATH"
+        echo "Marker: $MARKER"
+
+        if [[ "$MODE" == "all" ]]; then
+          pytest
+
+        elif [[ "$MODE" == "changed" ]]; then
+          CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
+          echo "Changed test files: $CHANGED_TESTS"
+          if [ -n "$CHANGED_TESTS" ]; then
+            pytest $CHANGED_TESTS
+          else
+            echo "No changed tests found."
+          fi
+
+        elif [[ "$MODE" == "path" ]]; then
+          if [ -n "$PATH" ]; then
+            pytest "$PATH"
+          else
+            echo "Error: test_path is empty"
+            exit 1
+          fi
+
+        elif [[ "$MODE" == "marker" ]]; then
+          if [ -n "$MARKER" ]; then
+            pytest -m "$MARKER"
+          else
+            echo "Error: test_marker is empty"
+            exit 1
+          fi
+
+        else
+          echo "Invalid mode: $MODE"
+          exit 1
+        fi
