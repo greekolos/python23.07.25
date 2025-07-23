@@ -22,5 +22,5 @@ def browser():
 
 
 def test_registr(browser):
-    browser.get("https://example.com")
-    assert "Example Domain" in browser.title
+    browser.get("https://www.google.com/")
+    assert "Google" in browser.title
