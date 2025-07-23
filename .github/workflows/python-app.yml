@@ -29,14 +29,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Debug PATH and Python
-        run: |
-          echo $PATH
-          which python
-          which python3
-          python --version || echo "python not found"
-          python3 --version || echo "python3 not found"
-
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
@@ -45,10 +37,24 @@ jobs:
       - name: Install Google Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
+          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4 google-chrome-stable
 
-      - name: Setup ChromeDriver
-        uses: seleniumhq/action-chromedriver@v1
+      - name: Setup ChromeDriver manually
+        run: |
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+          echo "Chrome version: $CHROME_VERSION"
+
+          CHROME_MAJOR_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 1)
+          CHROME_MINOR_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 2)
+          CHROME_BUILD_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 3)
+          CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAJOR_VERSION}")
+
+          echo "Using ChromeDriver version: $CHROMEDRIVER_VERSION"
+
+          wget -N https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip -P ~/
+          unzip -o ~/chromedriver_linux64.zip -d ~/
+          chmod +x ~/chromedriver
+          sudo mv -f ~/chromedriver /usr/local/bin/chromedriver
 
       - name: Run tests based on mode
         run: |
