@@ -22,70 +22,70 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Install Google Chrome
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+      - name: Install Google Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
 
-    - name: Check Python environment
-      run: |
-        set -x
-        which python3
-        python3 --version
-        pip3 --version
-        python3 -m pytest --version
+      - name: Check Python environment
+        run: |
+          set -x
+          which python
+          python --version
+          pip --version
+          python -m pytest --version
 
-    - name: Run tests based on mode
-      run: |
-        MODE="${{ github.event.inputs.mode }}"
-        PATH="${{ github.event.inputs.test_path }}"
-        MARKER="${{ github.event.inputs.test_marker }}"
+      - name: Run tests based on mode
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          PATH="${{ github.event.inputs.test_path }}"
+          MARKER="${{ github.event.inputs.test_marker }}"
 
-        echo "Mode: $MODE"
-        echo "Test path: $PATH"
-        echo "Marker: $MARKER"
+          echo "Mode: $MODE"
+          echo "Test path: $PATH"
+          echo "Marker: $MARKER"
 
-        if [[ "$MODE" == "all" ]]; then
-          python3 -m pytest
+          if [[ "$MODE" == "all" ]]; then
+            python -m pytest
 
-        elif [[ "$MODE" == "changed" ]]; then
-          CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
-          echo "Changed test files: $CHANGED_TESTS"
-          if [ -n "$CHANGED_TESTS" ]; then
-            python3 -m pytest $CHANGED_TESTS
+          elif [[ "$MODE" == "changed" ]]; then
+            CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
+            echo "Changed test files: $CHANGED_TESTS"
+            if [ -n "$CHANGED_TESTS" ]; then
+              python -m pytest $CHANGED_TESTS
+            else
+              echo "No changed tests found."
+            fi
+
+          elif [[ "$MODE" == "path" ]]; then
+            if [ -n "$PATH" ]; then
+              python -m pytest "$PATH"
+            else
+              echo "Error: test_path is empty"
+              exit 1
+            fi
+
+          elif [[ "$MODE" == "marker" ]]; then
+            if [ -n "$MARKER" ]; then
+              python -m pytest -m "$MARKER"
+            else
+              echo "Error: test_marker is empty"
+              exit 1
+            fi
+
           else
-            echo "No changed tests found."
-          fi
-
-        elif [[ "$MODE" == "path" ]]; then
-          if [ -n "$PATH" ]; then
-            python3 -m pytest "$PATH"
-          else
-            echo "Error: test_path is empty"
+            echo "Invalid mode: $MODE"
             exit 1
           fi
-
-        elif [[ "$MODE" == "marker" ]]; then
-          if [ -n "$MARKER" ]; then
-            python3 -m pytest -m "$MARKER"
-          else
-            echo "Error: test_marker is empty"
-            exit 1
-          fi
-
-        else
-          echo "Invalid mode: $MODE"
-          exit 1
-        fi
