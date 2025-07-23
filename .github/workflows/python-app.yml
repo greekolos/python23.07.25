@@ -39,15 +39,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
 
-    - name: Install ChromeDriver
-      run: |
-        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-        echo "Chrome version: $CHROME_VERSION"
-        wget -N https://chromedriver.storage.googleapis.com/$CHROME_VERSION/chromedriver_linux64.zip
-        unzip -o chromedriver_linux64.zip
-        sudo mv -f chromedriver /usr/local/bin/chromedriver
-        sudo chmod +x /usr/local/bin/chromedriver
-
     - name: Run tests based on mode
       shell: bash
       run: |
@@ -67,7 +58,6 @@ jobs:
           python -m pytest
 
         elif [[ "$MODE" == "changed" ]]; then
-          # Для push событие diff с прошлого коммита, для workflow_dispatch можно будет пусто
           CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
           echo "Changed test files: $CHANGED_TESTS"
           if [ -n "$CHANGED_TESTS" ]; then
@@ -96,3 +86,4 @@ jobs:
           echo "Invalid mode: $MODE"
           exit 1
         fi
+
