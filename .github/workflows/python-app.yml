@@ -39,13 +39,16 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
 
-    - name: Run tests based on mode
-      shell: bash
+    - name: Check Python environment
       run: |
+        set -x
+        which python3
         python3 --version
         pip3 --version
         python3 -m pytest --version
 
+    - name: Run tests based on mode
+      run: |
         MODE="${{ github.event.inputs.mode }}"
         PATH="${{ github.event.inputs.test_path }}"
         MARKER="${{ github.event.inputs.test_marker }}"
