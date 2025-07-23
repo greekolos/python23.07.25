@@ -47,8 +47,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      - name: Setup ChromeDriver (auto version)
-        uses: webdrivers/action-chromedriver@v1
+      - name: Setup ChromeDriver
+        uses: seleniumhq/action-chromedriver@v1
 
       - name: Run tests based on mode
         run: |
