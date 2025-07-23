@@ -28,24 +28,31 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        sudo apt-get update
+        sudo apt-get install -y wget unzip xvfb libnss3 libgconf-2-4 libgtk-3-0 libasound2
+        python3 -m pip install --upgrade pip
+        pip3 install -r requirements.txt
 
-    - name: Install Google Chrome and dependencies
+    - name: Install Chrome
       run: |
-        sudo apt-get update
-        sudo apt-get install -y wget unzip xvfb libxi6 libnss3 libxss1 libasound2t64 fonts-liberation libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libgbm1 libpango-1.0-0 libpangocairo-1.0-0
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+        wget -q -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt install -y ./google-chrome.deb
+
+    - name: Install ChromeDriver
+      run: |
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+        CHROMEDRIVER_VERSION=$(wget -qO- https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
+        wget -q -O chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
 
     - name: Run tests based on mode
       shell: bash
       run: |
-        python --version
-        pip --version
-        python -m pytest --version
+        python3 --version
+        pip3 --version
+        python3 -m pytest --version
 
         MODE="${{ github.event.inputs.mode }}"
         PATH="${{ github.event.inputs.test_path }}"
@@ -56,20 +63,20 @@ jobs:
         echo "Marker: $MARKER"
 
         if [[ "$MODE" == "all" ]]; then
-          python -m pytest
+          python3 -m pytest
 
         elif [[ "$MODE" == "changed" ]]; then
           CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
           echo "Changed test files: $CHANGED_TESTS"
           if [ -n "$CHANGED_TESTS" ]; then
-            python -m pytest $CHANGED_TESTS
+            python3 -m pytest $CHANGED_TESTS
           else
             echo "No changed tests found."
           fi
 
         elif [[ "$MODE" == "path" ]]; then
           if [ -n "$PATH" ]; then
-            python -m pytest "$PATH"
+            python3 -m pytest "$PATH"
           else
             echo "Error: test_path is empty"
             exit 1
@@ -77,7 +84,7 @@ jobs:
 
         elif [[ "$MODE" == "marker" ]]; then
           if [ -n "$MARKER" ]; then
-            python -m pytest -m "$MARKER"
+            python3 -m pytest -m "$MARKER"
           else
             echo "Error: test_marker is empty"
             exit 1
