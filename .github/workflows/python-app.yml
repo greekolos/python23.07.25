@@ -30,13 +30,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest
-
-    - name: Check installed packages
-      run: pip list
 
     - name: Run tests based on mode
       run: |
+        python --version
+        pip --version
+        python -m pytest --version
+
         MODE="${{ github.event.inputs.mode }}"
         PATH="${{ github.event.inputs.test_path }}"
         MARKER="${{ github.event.inputs.test_marker }}"
@@ -46,20 +46,20 @@ jobs:
         echo "Marker: $MARKER"
 
         if [[ "$MODE" == "all" ]]; then
-          pytest
+          python -m pytest
 
         elif [[ "$MODE" == "changed" ]]; then
           CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
           echo "Changed test files: $CHANGED_TESTS"
           if [ -n "$CHANGED_TESTS" ]; then
-            pytest $CHANGED_TESTS
+            python -m pytest $CHANGED_TESTS
           else
             echo "No changed tests found."
           fi
 
         elif [[ "$MODE" == "path" ]]; then
           if [ -n "$PATH" ]; then
-            pytest "$PATH"
+            python -m pytest "$PATH"
           else
             echo "Error: test_path is empty"
             exit 1
@@ -67,7 +67,7 @@ jobs:
 
         elif [[ "$MODE" == "marker" ]]; then
           if [ -n "$MARKER" ]; then
-            pytest -m "$MARKER"
+            python -m pytest -m "$MARKER"
           else
             echo "Error: test_marker is empty"
             exit 1
