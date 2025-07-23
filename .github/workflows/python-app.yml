@@ -28,15 +28,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
     - name: Run tests based on mode
       shell: bash
       run: |
-        python3 --version
-        pip3 --version
-        python3 -m pytest --version
+        python --version
+        pip --version
+        python -m pytest --version
 
         MODE="${{ github.event.inputs.mode }}"
         PATH="${{ github.event.inputs.test_path }}"
@@ -47,20 +47,20 @@ jobs:
         echo "Marker: $MARKER"
 
         if [[ "$MODE" == "all" ]]; then
-          python3 -m pytest
+          python -m pytest
 
         elif [[ "$MODE" == "changed" ]]; then
           CHANGED_TESTS=$(git diff --name-only HEAD~1 HEAD | grep -E 'tests/.*\.py$' || true)
           echo "Changed test files: $CHANGED_TESTS"
           if [ -n "$CHANGED_TESTS" ]; then
-            python3 -m pytest $CHANGED_TESTS
+            python -m pytest $CHANGED_TESTS
           else
             echo "No changed tests found."
           fi
 
         elif [[ "$MODE" == "path" ]]; then
           if [ -n "$PATH" ]; then
-            python3 -m pytest "$PATH"
+            python -m pytest "$PATH"
           else
             echo "Error: test_path is empty"
             exit 1
@@ -68,7 +68,7 @@ jobs:
 
         elif [[ "$MODE" == "marker" ]]; then
           if [ -n "$MARKER" ]; then
-            python3 -m pytest -m "$MARKER"
+            python -m pytest -m "$MARKER"
           else
             echo "Error: test_marker is empty"
             exit 1
